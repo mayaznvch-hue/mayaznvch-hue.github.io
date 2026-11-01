@@ -1,0 +1,35 @@
+name: osm-data
+on:
+  schedule:
+    - cron: '0 1 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: live-data
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: fetch
+        run: |
+          mkdir -p .github/data/osm_tiles
+          node .github/live/fetch_osm.mjs
+          cd .github && node live/build_pois.mjs
+          n=$(node -e "console.log(require('./data/pois.json').items.length)")
+          echo "pois: $n"
+          [ "$n" -gt 3000 ] && cp data/pois.json ../data/pois.json
+      - name: commit
+        run: |
+          git config user.name "live-data"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/pois.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Карта: свежие данные OSM"
+          git pull --rebase -q && git push

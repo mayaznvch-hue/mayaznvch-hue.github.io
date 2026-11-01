@@ -10,7 +10,9 @@ for (const [name, path] of Object.entries(jobs)) {
     const r = await fetch('http://127.0.0.1:8080' + path, { signal: AbortSignal.timeout(60000) });
     const j = await r.json();
     if (!r.ok || j.error || !(j.items?.length)) throw new Error(j.error || 'пусто');
-    fs.writeFileSync(`${out}/${name}.json`, JSON.stringify(j));
+    const f = `${out}/${name}.json`;
+    let old = null; try { old = JSON.parse(fs.readFileSync(f, 'utf8')); } catch {}
+    if (!old || JSON.stringify(old.items) !== JSON.stringify(j.items)) fs.writeFileSync(f, JSON.stringify(j));
     ok++; console.log('ok', name, j.items.length);
   } catch (e) { console.log('fail', name, e.message); }
 }
