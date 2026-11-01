@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Погода и воздух · Реутов по делу</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../common.css">
+<style>
+  .now { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 12px; margin-bottom: 22px; }
+  .now .card { padding: 18px; }
+  .deg { font-size: 64px; font-weight: 600; letter-spacing: -2px; line-height: 1; }
+  .advice { font-size: 18px; line-height: 1.4; }
+  .hours { display: grid; grid-auto-flow: column; grid-auto-columns: 62px; overflow-x: auto; gap: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 8px 0; }
+  .hours div { text-align: center; font-size: 13px; padding: 0 2px; border-right: 1px solid var(--line); }
+  .hours b { display: block; font-size: 17px; font-weight: 600; margin: 2px 0; }
+  .hours .rain { color: #1f6fd1; height: 16px; }
+  .hours .day { color: var(--accent); font-weight: 600; }
+  .aq { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .aq .v { font-size: 26px; font-weight: 600; }
+  @media (max-width: 760px) { .now, .aq { grid-template-columns: 1fr 1fr; } .now .card:first-child { grid-column: 1 / -1; } .deg { font-size: 52px; } }
+</style>
+</head>
+<body data-source='Прогноз: Норвежский метеоинститут (<a href="https://api.met.no">met.no</a>), обновление раз в 15 минут. Воздух: <a href="https://open-meteo.com">Open-Meteo</a>, модель CAMS. Это расчёт, а не показания городского датчика.'>
+<main class="wrap">
+  <h1>Что надеть и брать ли зонт</h1>
+  <p class="lead">Погода в Реутове на ближайшие сутки, а заодно чистота воздуха и пыльца для аллергиков.</p>
+  <div id="note"></div>
+  <div class="now" id="now"><div class="skeleton">Загружаю прогноз…</div></div>
+  <h2>По часам</h2>
+  <div class="hours" id="hours"></div>
+  <h2>Воздух</h2>
+  <div class="aq" id="aq"></div>
+</main>
+<script type="module">
+import { header, api, $, esc, hhmm } from '../common.js';
+header('Погода и воздух');
+
+const SYM = {
+  clearsky: 'ясно', fair: 'малооблачно', partlycloudy: 'переменная облачность', cloudy: 'пасмурно', fog: 'туман',
+  lightrain: 'небольшой дождь', rain: 'дождь', heavyrain: 'ливень', lightrainshowers: 'кратковременный дождь', rainshowers: 'ливневый дождь', heavyrainshowers: 'сильный ливень',
+  lightsleet: 'мокрый снег', sleet: 'мокрый снег', heavysleet: 'сильный мокрый снег', lightsleetshowers: 'мокрый снег', sleetshowers: 'мокрый снег',
+  lightsnow: 'небольшой снег', snow: 'снег', heavysnow: 'сильный снег', lightsnowshowers: 'снежные заряды', snowshowers: 'снегопад', heavysnowshowers: 'сильный снегопад',
+  rainandthunder: 'гроза', lightrainandthunder: 'гроза', heavyrainandthunder: 'сильная гроза', rainshowersandthunder: 'гроза', snowandthunder: 'гроза со снегом',
+};
+const sym = (s) => SYM[(s || '').replace(/_(day|night|polartwilight)$/, '')] || '—';
+const feels = (t, w) => (t <= 10 && w > 1.3 ? 13.12 + 0.6215 * t - 11.37 * (w * 3.6) ** 0.16 + 0.3965 * t * (w * 3.6) ** 0.16 : t);
+
+function advice(series) {
+  const next = series.slice(0, 12);
+  const t = next[0].temp, f = feels(t, next[0].wind);
+  const rainH = next.filter((x) => (x.rain ?? 0) >= 0.2);
+  const snowy = next.some((x) => /snow|sleet/.test(x.symbol || ''));
+  const minF = Math.min(...next.map((x) => feels(x.temp, x.wind)));
+  const gust = Math.max(...next.map((x) => x.gust ?? x.wind));
+  const out = [];
+  if (minF <= -15) out.push('Сильный мороз: пуховик, шапка, варежки, шарф на лицо.');
+  else if (minF <= -5) out.push('Зимняя куртка и шапка.');
+  else if (minF <= 3) out.push('Тёплая куртка. Шапка лишней не будет, особенно вечером.');
+  else if (minF <= 10) out.push('Демисезонная куртка или плотная толстовка с ветровкой.');
+  else if (minF <= 17) out.push('Лёгкая куртка или кофта.');
+  else out.push('Можно в футболке.');
+  if (rainH.length) out.push(`Зонт нужен: дождь ожидается около ${hhmm(rainH[0].time)}.`);
+  else if (snowy) out.push('Будет снег, обувь лучше непромокаемую.');
+  else out.push('Осадков в ближайшие 12 часов не обещают.');
+  if (t > -2 && t < 2 && next.some((x) => x.temp < 0) && next.some((x) => x.temp > 0)) out.push('Около нуля: к ночи может быть гололёд.');
+  if (gust >= 12) out.push(`Порывы ветра до ${Math.round(gust)} м/с.`);
+  return { t, f, text: out.join(' ') };
+}
+const aqiWord = (v) => (v == null ? '—' : v <= 20 ? 'чистый' : v <= 40 ? 'хороший' : v <= 60 ? 'средний' : v <= 80 ? 'плохой' : 'очень плохой');
+const pollenWord = (v) => (v == null ? 'нет данных' : v < 1 ? 'нет' : v < 10 ? 'мало' : v < 50 ? 'умеренно' : 'много');
+
+async function load() {
+  try {
+    const w = await api('/api/weather');
+    const s = w.series, a = advice(s);
+    const cur = s[0];
+    $('#note').innerHTML = w.stale ? '<div class="status">Прогноз из кэша: met.no сейчас не отвечает.</div>' : '';
+    $('#now').innerHTML = `
+      <div class="card"><div class="muted small">Сейчас в Реутове</div>
+        <div class="deg">${cur.temp > 0 ? '+' : ''}${Math.round(cur.temp)}°</div>
+        <div>${sym(cur.symbol)}, ощущается как ${Math.round(a.f)}°</div></div>
+      <div class="card" style="grid-column: span 2"><div class="muted small">Совет на выход</div><div class="advice">${esc(a.text)}</div>
+        <div class="small muted" style="margin-top:8px">Ветер ${cur.wind.toFixed(1).replace('.', ',')} м/с · влажность ${Math.round(cur.hum)}% · давление ${Math.round(cur.pressure * 0.750062)} мм рт. ст.</div></div>`;
+    let prevDay = null;
+    $('#hours').innerHTML = s.slice(0, 36).map((x) => {
+      const d = new Date(x.time).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow', weekday: 'short' });
+      const lbl = d !== prevDay && prevDay !== null ? `<span class="day">${d}</span>` : hhmm(x.time);
+      prevDay = d;
+      return `<div title="${sym(x.symbol)}"><span>${lbl}</span><b>${x.temp > 0 ? '+' : ''}${Math.round(x.temp)}°</b><div class="rain">${x.rain ? x.rain.toFixed(1).replace('.', ',') + ' мм' : ''}</div><span class="muted">${sym(x.symbol).split(' ').slice(-1)[0]}</span></div>`;
+    }).join('');
+    const q = w.air;
+    $('#aq').innerHTML = q ? `
+      <div class="card"><div class="muted small">Индекс качества (EAQI)</div><div class="v">${q.european_aqi ?? '—'}</div><div class="small">${aqiWord(q.european_aqi)}</div></div>
+      <div class="card"><div class="muted small">Мелкая пыль PM2,5</div><div class="v">${q.pm2_5 ?? '—'}</div><div class="small">мкг/м³, норма ВОЗ за сутки 15</div></div>
+      <div class="card"><div class="muted small">Диоксид азота</div><div class="v">${q.nitrogen_dioxide ?? '—'}</div><div class="small">мкг/м³, в основном от машин и МКАД</div></div>
+      <div class="card"><div class="muted small">Пыльца: берёза, злаки, амброзия</div><div class="v" style="font-size:18px;margin-top:6px">${pollenWord(q.birch_pollen)}, ${pollenWord(q.grass_pollen)}, ${pollenWord(q.ragweed_pollen)}</div><div class="small muted">вне сезона цветения нули — это нормально</div></div>`
+      : '<div class="small muted">Сервис качества воздуха сейчас не ответил. Прогноз погоды при этом свежий.</div>';
+  } catch (e) {
+    $('#now').innerHTML = '';
+    $('#note').innerHTML = `<div class="status err">Прогноз не загрузился: ${esc(e.message)}</div>`;
+  }
+}
+load();
+setInterval(load, 15 * 60000);
+</script>
+</body></html>

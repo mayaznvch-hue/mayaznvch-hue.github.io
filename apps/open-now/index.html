@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Открыто сейчас · Реутов по делу</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/vendor/leaflet.css"><link rel="stylesheet" href="../common.css">
+<script src="/vendor/leaflet.js"></script>
+</head>
+<body data-source='Точки и часы работы: <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, выгрузка от 1 ноября 2026. Маршруты: OSRM. Если что-то закрылось или переехало, поправить можно прямо на openstreetmap.org.'>
+<main class="wrap">
+<h1>Что открыто рядом прямо сейчас</h1>
+<p class="lead">Магазины, кафе, банки, почта и МФЦ с часами работы, по которым видно, открыто ли сейчас. Время московское, даже если телефон живёт по другому поясу.</p>
+<div id="note"></div>
+<div class="bar" id="filters"></div>
+<div class="split">
+  <div><div class="muted small" id="count" style="margin-bottom:6px"></div><div class="list scroll" id="list"><div class="skeleton">Загружаю точки…</div></div></div>
+  <div id="map" class="map"></div>
+</div>
+
+</main>
+<script type="module">
+import { header } from '../common.js';
+import { poiApp } from '../poimap.js';
+header('Открыто сейчас');
+import { esc } from '../common.js';
+poiApp({ hours: true, limit: 60, search: 'Что ищем: хлеб, ремонт обуви, Сбер…',
+  match: (t) => { if (!t.opening_hours || t.amenity === 'pharmacy') return false;
+    if (t.shop && ['supermarket','convenience','bakery','greengrocer','butcher','dairy','frozen_food','deli','farm','seafood'].includes(t.shop)) return 'food';
+    if (['cafe','restaurant','fast_food','bar','pub'].includes(t.amenity)) return 'eat';
+    if (['bank','atm','post_office','bureau_de_change'].includes(t.amenity) || t.office === 'government' || t.amenity === 'townhall') return 'serv';
+    if (t.shop || t.craft) return 'shop'; return false; },
+  groups: { food: { label: 'Продукты', color: '#2f7a3e' }, eat: { label: 'Поесть', color: '#c8461f' }, serv: { label: 'Банк, почта, МФЦ', color: '#1f6fd1' }, shop: { label: 'Остальные магазины и услуги', color: '#6d695f' } },
+  title: (t) => t.name || t.brand || 'Без названия',
+  sub: (t) => esc(({ supermarket: 'супермаркет', convenience: 'магазин у дома', bakery: 'пекарня', cafe: 'кафе', restaurant: 'ресторан', fast_food: 'фастфуд', bank: 'банк', atm: 'банкомат', post_office: 'почта', hairdresser: 'парикмахерская', beauty: 'салон красоты', clothes: 'одежда', florist: 'цветы', alcohol: 'алкоголь', pet: 'зоотовары', hardware: 'хозтовары', mobile_phone: 'телефоны', copyshop: 'копицентр', shoes: 'обувь', car_repair: 'автосервис', outpost: 'пункт выдачи' })[t.shop || t.amenity || t.craft] || t.shop || t.amenity || t.craft || '') });
+</script>
+</body></html>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Городская лента · Реутов по делу</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../common.css">
+<style>
+  .news { display: grid; gap: 0; border-top: 1px solid var(--ink); max-width: 820px; }
+  .news article { border-bottom: 1px solid var(--line); padding: 14px 0; display: grid; grid-template-columns: 110px 1fr; gap: 16px; }
+  .news .src { font-size: 13px; color: var(--muted); }
+  .news .src b { display: block; color: var(--ink); font-weight: 600; }
+  .news h3 { margin: 0 0 4px; font-size: 18px; font-weight: 600; line-height: 1.25; }
+  .news h3 a { text-decoration: none; }
+  .news h3 a:hover { text-decoration: underline; }
+  .news p { margin: 0; color: #3a3833; font-size: 15px; }
+  mark { background: #f6d9c9; color: inherit; padding: 0 2px; }
+  @media (max-width: 640px) { .news article { grid-template-columns: 1fr; gap: 4px; } .news .src b { display: inline; margin-right: 6px; } }
+</style>
+</head>
+<body data-source='Источники: <a href="https://proreutov.ru">ПроРеутов</a>, <a href="https://biblreut.ru">Реутовская библиотека</a>, <a href="https://www.dkreutov.ru">ДК «Мир»</a>, <a href="https://mkdc-reutov.ru">МКДЦ</a>. Заголовки и анонсы принадлежат изданиям, полный текст по ссылке.'>
+<main class="wrap">
+  <h1>Что происходит в городе</h1>
+  <p class="lead">Свежие новости из городской газеты, библиотеки, ДК «Мир» и молодёжного центра на одной странице. Можно искать по слову: «отключение», «концерт», «Победы».</p>
+  <div class="bar">
+    <div class="seg" id="src"></div>
+    <input type="search" id="q" placeholder="Поиск по ленте" style="min-width:220px">
+  </div>
+  <div id="note"></div>
+  <div class="news" id="news"><div class="skeleton">Собираю ленту…</div></div>
+</main>
+<script type="module">
+import { header, api, $, esc } from '../common.js';
+header('Городская лента');
+let items = [], src = 'Все';
+const rel = (iso) => {
+  if (!iso) return '';
+  const d = new Date(iso), days = Math.floor((Date.now() - d) / 86400000);
+  const date = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', timeZone: 'Europe/Moscow' });
+  return days < 1 ? 'сегодня' : days < 2 ? 'вчера' : date;
+};
+function draw() {
+  const q = $('#q').value.trim().toLowerCase();
+  let list = items.filter((x) => src === 'Все' || x.source === src);
+  if (q) list = list.filter((x) => (x.title + ' ' + x.text).toLowerCase().includes(q));
+  const hl = (s) => (q ? esc(s).replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), (m) => `<mark>${m}</mark>`) : esc(s));
+  $('#news').innerHTML = list.map((x) => `<article>
+    <div class="src"><b>${esc(x.source)}</b>${rel(x.date)}</div>
+    <div><h3><a href="${esc(x.link)}" target="_blank" rel="noopener">${hl(x.title)}</a></h3>${x.text ? `<p>${hl(x.text)}</p>` : ''}</div>
+  </article>`).join('') || '<div class="skeleton">По этому запросу в ленте ничего нет.</div>';
+}
+try {
+  const j = await api('/api/news');
+  items = j.items.sort((a, b) => (b.date || '0').localeCompare(a.date || '0'));
+  const sources = ['Все', ...new Set(items.map((x) => x.source))];
+  $('#src').innerHTML = sources.map((s) => `<button data-s="${esc(s)}" aria-pressed="${s === src}">${esc(s)}</button>`).join('');
+  $('#src').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; src = b.dataset.s; $('#src').querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x === b)); draw(); };
+  if (j.errors?.length) $('#note').innerHTML = `<div class="status">Не ответили: ${j.errors.map(esc).join(', ')}. Остальное на месте.</div>`;
+  $('#q').oninput = draw;
+  draw();
+} catch (e) {
+  $('#news').innerHTML = '';
+  $('#note').innerHTML = `<div class="status err">Лента не загрузилась: ${esc(e.message)}</div>`;
+}
+</script>
+</body></html>

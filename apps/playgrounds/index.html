@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Детские площадки · Реутов по делу</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/vendor/leaflet.css"><link rel="stylesheet" href="../common.css">
+<script src="/vendor/leaflet.js"></script>
+</head>
+<body data-source='Точки и часы работы: <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, выгрузка от 1 ноября 2026. Маршруты: OSRM. Если что-то закрылось или переехало, поправить можно прямо на openstreetmap.org.'>
+<main class="wrap">
+<h1>Площадка поближе к дому</h1>
+<p class="lead">Все детские площадки Реутова из OpenStreetMap, больше четырёхсот. Включите геолокацию, нажмите на площадку, и карта проложит к ней пешеходный маршрут.</p>
+<div id="note"></div>
+<div class="bar" id="filters"></div>
+<div class="split">
+  <div><div class="muted small" id="count" style="margin-bottom:6px"></div><div class="list scroll" id="list"><div class="skeleton">Загружаю точки…</div></div></div>
+  <div id="map" class="map"></div>
+</div>
+
+</main>
+<script type="module">
+import { header } from '../common.js';
+import { poiApp } from '../poimap.js';
+header('Детские площадки');
+poiApp({ limit: 40, unit: () => 'площадок',
+  match: (t) => t.leisure === 'playground' ? 'pg' : t.leisure === 'fitness_station' ? 'fit' : t.leisure === 'dog_park' ? 'dog' : false,
+  groups: { pg: { label: 'Детские площадки', color: '#c8461f' }, fit: { label: 'Уличные тренажёры', color: '#1f6fd1' }, dog: { label: 'Площадки для собак', color: '#7a4fb3' } },
+  title: (t) => t.name || ({ playground: 'Детская площадка', fitness_station: 'Тренажёры', dog_park: 'Площадка для собак' })[t.leisure],
+  sub: (t) => [t.surface && ({ rubber: 'резиновое покрытие', sand: 'песок', grass: 'трава', asphalt: 'асфальт', ground: 'грунт', woodchips: 'щепа', artificial_turf: 'искусственный газон' })[t.surface], t.min_age && `от ${t.min_age} лет`, t.max_age && `до ${t.max_age} лет`, t.lit === 'yes' && 'есть освещение'].filter(Boolean).join(', ') || '<span class="muted">без подробностей</span>' });
+</script>
+</body></html>

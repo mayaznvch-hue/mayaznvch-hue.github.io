@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Победы, 6. Полёт над молодёжным центром</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#9db4c8;font-family:"Golos Text",system-ui,sans-serif;color:#1d1d1b}
+  canvas{display:block}
+  #start{position:fixed;inset:0;display:flex;align-items:flex-end;padding:6vh 6vw;background:linear-gradient(to right,rgba(20,22,24,.86) 0,rgba(20,22,24,.7) 640px,rgba(20,22,24,.1) 100%);color:#f3efe6;cursor:pointer}
+  #start .box{max-width:560px}
+  #start h1{font-size:44px;line-height:1.02;margin:0 0 14px;font-weight:600;letter-spacing:-.5px}
+  #start h1 span{color:#ef6a3a}
+  #start p{margin:0 0 10px;font-size:16px;line-height:1.45;color:#ddd6c8}
+  #start .keys{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:18px 0;font-size:14px}
+  #start kbd,#help kbd{font-family:inherit;background:#f3efe6;color:#222;border-radius:3px;padding:1px 6px;font-size:12px;font-weight:600}
+  #start .go{display:inline-block;margin-top:6px;background:#e0501e;color:#fff;padding:12px 20px;font-weight:600;font-size:15px}
+  #hud{position:fixed;left:16px;bottom:16px;font-size:13px;background:rgba(243,239,230,.92);padding:8px 12px;display:none;max-width:340px}
+  #hud b{font-weight:600}
+  #place{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#1d1d1b;color:#f3efe6;padding:6px 14px;font-size:14px;display:none;white-space:nowrap}
+  #card{position:fixed;right:16px;top:16px;width:340px;max-height:calc(100% - 32px);overflow:auto;background:#f3efe6;padding:18px 20px;font-size:14px;line-height:1.5;display:none;border-left:5px solid #e0501e}
+  #card h2{margin:0 0 8px;font-size:20px}
+  #card ol{padding-left:0;list-style:none;margin:10px 0}
+  #card li{margin:0 0 8px;display:grid;grid-template-columns:52px 1fr}
+  #card li b{color:#b33a12}
+  #card small{color:#6b675e}
+  #help{position:fixed;right:16px;bottom:16px;font-size:12px;background:rgba(29,29,27,.8);color:#e9e4d8;padding:8px 10px;display:none;line-height:1.7}
+  #touch{position:fixed;left:0;right:0;bottom:0;display:none;justify-content:space-between;padding:16px;pointer-events:none}
+  #touch .pad{pointer-events:auto;display:grid;grid-template-columns:repeat(3,54px);gap:6px}
+  #touch button{width:54px;height:54px;border:0;background:rgba(243,239,230,.8);font:600 18px "Golos Text",sans-serif;color:#1d1d1b}
+  #touch button:active{background:#e0501e;color:#fff}
+  @media (max-width:700px){#start h1{font-size:32px}#card{left:16px;width:auto;top:auto;bottom:90px;max-height:45%}}
+</style>
+</head>
+<body>
+<div id="start">
+  <div class="box">
+    <h1>Улица Победы, 6.<br><span>Молодёжный центр</span></h1>
+    <p>Модель квартала собрана по данным OpenStreetMap: дома, дороги, сквер Победы и Вечный огонь стоят на своих местах. Сам центр мы дорисовали по фотографиям фасада, поэтому пропорции у него примерные.</p>
+    <div class="keys">
+      <span><kbd>W A S D</kbd></span><span>лететь</span>
+      <span><kbd>Пробел</kbd> / <kbd>C</kbd></span><span>вверх / вниз</span>
+      <span><kbd>Shift</kbd></span><span>быстрее</span>
+      <span>мышь</span><span>смотреть по сторонам</span>
+      <span><kbd>O</kbd></span><span>облёт вокруг центра</span>
+      <span><kbd>I</kbd></span><span>история здания</span>
+      <span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></span><span>фасад, Вечный огонь, вид сверху</span>
+    </div>
+    <span class="go">Нажмите, чтобы взлететь</span>
+  </div>
+</div>
+<div id="place"></div>
+<div id="hud"></div>
+<div id="help"><kbd>O</kbd> облёт · <kbd>I</kbd> история · <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> точки · <kbd>Esc</kbd> отпустить мышь</div>
+<div id="card">
+  <h2>Победы, 6</h2>
+  <div>Сейчас здесь МКДЦ, Молодёжный культурно-досуговый центр. На этом месте клуб стоит больше ста лет, менялись только здания и вывески.</div>
+  <ol>
+    <li><b>1907</b><span>Товарищество Реутовской мануфактуры строит деревянный Народный дом: зал примерно на 250 мест и библиотека-читальня. Улица тогда называлась Клубной.</span></li>
+    <li><b>1919</b><span>Отсюда уходит отряд добровольцев на Гражданскую войну.</span></li>
+    <li><b>1920-е</b><span>Клуб имени 7-й годовщины Октября, зал уже примерно на 500 мест.</span></li>
+    <li><b>1941</b><span>В войну в клубе работал призывной пункт. Об этом напоминает мемориальная доска, её повесили в 2013 году.</span></li>
+    <li><b>1960-е</b><span>Клуб «Дружба». В 1965 году Клубную улицу переименовывают в улицу Победы.</span></li>
+    <li><b>1990-е</b><span>В здании открывается Молодёжный центр.</span></li>
+    <li><b>2001</b><span>Здесь же начинает работать Реутовский драматический театр.</span></li>
+    <li><b>2012</b><span>В декабре открывают нынешнее здание МКДЦ.</span></li>
+  </ol>
+  <small>Источник: regions.ru, «От Народного дома до МКДЦ». Через дорогу, в сквере Победы, горит Вечный огонь. Нажмите 2, чтобы перелететь к нему.</small>
+</div>
+<div id="touch"><div class="pad" id="padL"></div><div class="pad" id="padR"></div></div>
+<script type="importmap">{"imports":{"three":"../vendor/three.module.js"}}</script>
+<script type="module" src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Память города · Реутов по делу</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/vendor/leaflet.css"><link rel="stylesheet" href="../common.css">
+<script src="/vendor/leaflet.js"></script>
+</head>
+<body data-source='Точки и часы работы: <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, выгрузка от 1 ноября 2026. Маршруты: OSRM. Если что-то закрылось или переехало, поправить можно прямо на openstreetmap.org.'>
+<main class="wrap">
+<h1>Улицы, доски и памятники</h1>
+<p class="lead">Мемориальные доски, памятники и знаки Реутова. Многие висят на обычных жилых домах, их легко пройти мимо. Нажмите на точку, чтобы прочитать надпись.</p>
+<div id="note"></div>
+<div class="bar" id="filters"></div>
+<div class="split">
+  <div><div class="muted small" id="count" style="margin-bottom:6px"></div><div class="list scroll" id="list"><div class="skeleton">Загружаю точки…</div></div></div>
+  <div id="map" class="map"></div>
+</div>
+
+</main>
+<script type="module">
+import { header } from '../common.js';
+import { poiApp } from '../poimap.js';
+header('Память города');
+import { esc } from '../common.js';
+poiApp({ limit: 90, walk: true, search: 'Имя, год, слово из надписи',
+  match: (t) => t.historic ? (t.memorial === 'plaque' ? 'pl' : ['war_memorial'].includes(t.memorial) || /огонь|Победы|ополчен|войн/i.test(t.name || '') ? 'war' : t.historic === 'memorial' || t.historic === 'monument' ? 'mon' : 'oth') : false,
+  groups: { war: { label: 'Память о войне', color: '#b3261e' }, mon: { label: 'Памятники', color: '#1c1b19' }, pl: { label: 'Мемориальные доски', color: '#b7791f' }, oth: { label: 'Прочее историческое', color: '#6d695f' } },
+  title: (t) => t.name || t.inscription?.slice(0, 60) || ({ plaque: 'Мемориальная доска' })[t.memorial] || 'Памятное место',
+  sub: (t) => [t.inscription && `<i>«${esc(t.inscription.replace(/^[«"]|[»"]$/g, '').slice(0, 220))}${t.inscription.length > 220 ? '…' : ''}»</i>`, t.start_date && `с ${esc(t.start_date)}`].filter(Boolean).join('<br>') || '<span class="muted">надпись не переписана</span>' });
+</script>
+</body></html>
