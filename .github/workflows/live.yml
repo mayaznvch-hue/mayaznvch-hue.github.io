@@ -1,0 +1,34 @@
+name: live-data
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: live-data
+  cancel-in-progress: false
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: fetch
+        run: |
+          mkdir -p .github/live/public
+          (cd .github/live && PORT=8080 node server.mjs > /tmp/server.log 2>&1 &)
+          for i in $(seq 1 20); do curl -sf -o /dev/null http://127.0.0.1:8080/api/weather && break; sleep 1; done
+          node .github/live/snapshot.mjs data/api || true
+          cat /tmp/server.log
+      - name: commit
+        run: |
+          git config user.name "live-data"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/api
+          git diff --cached --quiet && exit 0
+          git commit -m "Свежие данные $(TZ=Europe/Moscow date +%H:%M)"
+          git pull --rebase -q && git push
